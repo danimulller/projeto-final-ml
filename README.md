@@ -1,6 +1,6 @@
-# Project: Cancer Treatment Cost Analysis
+# Project: Loan Default Prediction
 
-This repository explores a public Kaggle dataset with information about cancer patients worldwide (2015–2024). The notebooks guide you from data acquisition through exploratory analysis to modeling.
+This repository analyzes a Kaggle dataset on consumer loans and trains a model to predict the probability that a client will default. The notebooks cover data ingestion, cleaning, exploration and modeling using a random forest classifier.
 
 ## Repository structure
 
@@ -8,31 +8,40 @@ This repository explores a public Kaggle dataset with information about cancer p
 .
 ├── data
 │   ├── raw
-│   │   └── kaggle_cancer_patients_raw.csv      # original data from Kaggle
+│   │   └── probability_of_default.csv         # original data from Kaggle
 │   └── processed
-│       └── kaggle_cancer_patients_processed.csv  # cleaned data
+│       └── probability_of_default.csv         # cleaned features
 ├── notebooks
 │   ├── 01_data_ingestion.ipynb
 │   ├── 02_data_cleaning.ipynb
 │   ├── 03_exploratory_analysis.ipynb
-│   ├── 04_feature_engineering.ipynb
-│   ├── 05_model_training.ipynb
-│   ├── 06_model_evaluation.ipynb
-│   └── 07_model_export.ipynb
+│   ├── 04_model_training.ipynb
+│   └── 05_model_evaluation.ipynb
+├── models                                      # trained model and helpers
+│   ├── default_probability_model.pkl
+│   ├── encoder.pkl
+│   └── scaler.pkl
 ├── requirements.txt
-└── README.md                                    # this file
+├── test.py                                     # simple prediction script
+└── README.md
 ```
 
 ## Dataset
 
-The raw dataset (`kaggle_cancer_patients_raw.csv`) includes:
-- Patient demographics (age, gender, country, year)
-- Risk factors (genetic risk, air pollution, alcohol use, smoking, obesity level)
-- Cancer information (type, stage)
-- Treatment cost in USD and survival years
-- Target severity score
+The data comes from the Kaggle dataset **credit-analysis-probability-of-default**. Each record represents a loan application with client demographics and loan characteristics. Key columns after cleaning include:
 
-After cleaning, the processed dataset removes identifiers and retains the key features needed for analysis.
+- `age`
+- `income`
+- `home_ownership_type` (categorical)
+- `employment_length`
+- `loan_amount`
+- `loan_interest_rate`
+- `is_default` (target)
+- `loan_percent_income`
+- `has_defaulted_before`
+- `credit_history_length`
+
+The processed file in `data/processed/` drops unused fields and formats types for modeling.
 
 ## Getting started
 
@@ -42,34 +51,37 @@ After cleaning, the processed dataset removes identifiers and retains the key fe
    pip install -r requirements.txt
    ```
 
-   The notebooks use additional packages such as `matplotlib`, `seaborn`, and `scikit-learn`. Install them as needed:
-
-   ```bash
-   pip install matplotlib seaborn scikit-learn lifelines
-   ```
-
 2. **Kaggle credentials**
 
-   To download the dataset with the Kaggle API, place your `kaggle.json` file under a folder called `secrets/` (ignored by Git). The `01_data_ingestion.ipynb` notebook uses the Kaggle API to fetch and unpack the dataset.
+   Place your `kaggle.json` file inside a `secrets/` folder. The ingestion notebook uses the Kaggle API to download `probability_of_default.csv`.
 
-3. **Running the notebooks**
+3. **Run the notebooks** in order to reproduce the analysis and model training:
+   - `01_data_ingestion.ipynb`
+   - `02_data_cleaning.ipynb`
+   - `03_exploratory_analysis.ipynb`
+   - `04_model_training.ipynb`
+   - `05_model_evaluation.ipynb`
 
-   The notebooks are numbered in order:
-   - `01_data_ingestion.ipynb` – Download data from Kaggle.
-   - `02_data_cleaning.ipynb` – Basic cleaning and feature selection.
-   - `03_exploratory_analysis.ipynb` – Visualization and statistical exploration.
-   - `04_feature_engineering.ipynb` – Placeholder for engineered features.
-   - `05_model_training.ipynb` – Placeholder for training models.
-   - `06_model_evaluation.ipynb` – Placeholder for evaluation metrics.
-   - `07_model_export.ipynb` – Placeholder for exporting the trained model.
+The trained model and preprocessing objects are saved to the `models/` directory.
 
-   Execute each notebook sequentially to reproduce the workflow.
+## Prediction script
 
-## Project status
+`test.py` demonstrates how to load the trained model and predict the default probability for a single client. Customize the `sample_client` dictionary and run:
 
-Data ingestion, cleaning, and some exploratory analysis are implemented. The notebooks for feature engineering, model training, evaluation, and export currently contain minimal code and can be extended to build predictive models.
+```bash
+python test.py
+```
+
+Example output:
+
+```
+Default Probability: 12.34%
+```
+
+## Model performance
+
+On the hold-out test set the random forest achieved a ROC AUC of about 0.91.
 
 ## Contributing
 
-Feel free to fork the repository and open pull requests. Improvements to analysis, modeling, or documentation are welcome!
-
+Pull requests to improve the analysis or documentation are welcome.
