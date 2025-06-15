@@ -1,47 +1,76 @@
+"""Utility to predict the default probability for a single client."""
+
 import pickle
+from pathlib import Path
+
+import joblib
 import numpy as np
+import pandas as pd
 
-def predict_default_probability(client_data):
+MODEL_PATH = Path("models/default_probability_model.pkl")
+SCALER_PATH = Path("models/scaler.pkl")
+ENCODER_PATH = Path("models/encoder.pkl")
+
+
+def predict_default_probability(client_data: dict) -> float:
+    """Predict the probability of a client defaulting on a loan.
+
+    Parameters
+    ----------
+    client_data : dict
+        Dictionary with the following keys:
+        ``age``, ``income``, ``home_ownership_type``, ``employment_length``,
+        ``loan_amount``, ``loan_interest_rate``, ``loan_percent_income``,
+        ``has_defaulted_before``, ``credit_history_length``.
+
+    Returns
+    -------
+    float
+        Predicted probability of default.
     """
-    Predicts the default probability for a client using a pre-trained model.
 
-    Args:
-        client_data (list or np.ndarray): The input features for the client.
-            Must follow this order:
-            [age, income, employment_length, loan_amount, loan_interest_rate,
-             loan_percent_income, has_defaulted_before, credit_history_length]
-
-    Returns:
-        float: The predicted default probability.
-    """
-
-    # Load model (ensure model file exists at specified path)
-    with open("models/default_probability_model.pkl", "rb") as f:
+    # Load preprocessing objects and trained model
+    scaler = joblib.load(SCALER_PATH)
+    encoder = joblib.load(ENCODER_PATH)
+    with open(MODEL_PATH, "rb") as f:
         model = pickle.load(f)
 
-    # Ensure input is 2D array
-    x = np.array(client_data).reshape(1, -1)
+    # Convert input to DataFrame for easy manipulation
+    df = pd.DataFrame([client_data])
 
-    # Predict probability (class 1 = default)
-    prob = model.predict_proba(x)[0][1]
+    # Apply transformations consistent with model training
+    categorical = encoder.transform(df[["home_ownership_type"]]).toarray()
+    numerical_columns = [
+        "age",
+        "income",
+        "employment_length",
+        "loan_amount",
+        "loan_interest_rate",
+        "loan_percent_income",
+        "has_defaulted_before",
+        "credit_history_length",
+    ]
+    numerical = scaler.transform(df[numerical_columns])
 
-    return prob
+    # Combine numerical and encoded categorical features
+    x = np.hstack([numerical, categorical])
 
-# Client data in the specified order:
-# age, income, home_ownership_type, employment_length,
-# loan_amount, loan_interest_rate, loan_percent_income,
-# has_defaulted_before, credit_history_length
+    # Predict probability for class "default"
+    return float(model.predict_proba(x)[0, 1])
 
-client_data = [
-    35,      # age
-    50000,   # income
-    'OWN',   # home_ownership_type (OWN, MORTGAGE, RENT, OTHER)
-    5,       # employment_length
-    15000,   # loan_amount
-    0.08,    # loan_interest_rate
-    0.3,     # loan_percent_income
-    0,       # has_defaulted_before
-    7        # credit_history_length
-]
+if __name__ == "__main__":
+    # Example input data for demonstration purposes
+    sample_client = {
+        "age": 35,
+        "income": 50000,
+        "home_ownership_type": "OWN",  # OWN, MORTGAGE, RENT, OTHER
+        "employment_length": 5,
+        "loan_amount": 15000,
+        "loan_interest_rate": 0.08,
+        "loan_percent_income": 0.3,
+        "has_defaulted_before": 0,
+        "credit_history_length": 7,
+    }
 
-print(f"Default Probability: {predict_default_probability(client_data):.2%}")
+    probability = predict_default_probability(sample_client)
+    print(f"Default Probability: {probability:.2%}")

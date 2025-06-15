@@ -1,4 +1,5 @@
 kaggle
 pandas
-sklearn
+numpy
+scikit-learn
 joblib
